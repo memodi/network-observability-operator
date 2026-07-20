@@ -30,6 +30,9 @@ IMAGE_TAG_BASE ?= $(IMAGE_REGISTRY)/$(IMAGE_ORG)/flowlogs-pipeline
 # Image URL to use all building/pushing image targets
 IMAGE ?= $(IMAGE_TAG_BASE):$(VERSION)
 
+# Kubernetes namespace for deployments - defaults to current context namespace or "default"
+NAMESPACE ?= $(shell ns=$$(kubectl config view --minify --output 'jsonpath={..namespace}' 2>/dev/null); echo "$${ns:-default}")
+
 # Image building tool (docker / podman) - docker is preferred in CI
 OCI_BIN_PATH = $(shell which docker 2>/dev/null || which podman)
 OCI_BIN ?= $(shell basename ${OCI_BIN_PATH})
@@ -42,7 +45,7 @@ endif
 
 ifneq ($(CLEAN_BUILD),)
 	BUILD_DATE := $(shell date +%Y-%m-%d\ %H:%M)
-	BUILD_SHA := $(shell git rev-parse --short HEAD)
+	BUILD_SHA := $(shell git rev-parse --short=8 HEAD)
 	LDFLAGS ?= -X 'main.buildVersion=${VERSION}-${BUILD_SHA}' -X 'main.buildDate=${BUILD_DATE}'
 endif
 
@@ -238,7 +241,6 @@ tar-image: image-build ## Build single arch (amd64) and save as a tar
 	$(OCI_BIN) tag $(IMAGE)-amd64 $(IMAGE)
 	mkdir -p ./out
 	$(OCI_BIN) save -o out/image.tar $(IMAGE)
-	echo $(IMAGE) > ./out/name
 
 .PHONY: goyacc
 goyacc: ## Regenerate filters query langage
