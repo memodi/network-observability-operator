@@ -12,9 +12,11 @@ COPY go.sum .
 COPY vendor/ vendor/
 COPY cmd/ cmd/
 COPY pkg/ pkg/
+COPY internal/ internal/
 
 ENV GOEXPERIMENT strictfipsruntime
 RUN go build -tags strictfipsruntime -ldflags "-X 'main.BuildVersion=$BUILDVERSION' -X 'main.BuildDate=`date +%Y-%m-%d\ %H:%M`'" "./cmd/flowlogs-pipeline"
+RUN go build -tags strictfipsruntime -ldflags "-X 'main.BuildVersion=$BUILDVERSION' -X 'main.BuildDate=`date +%Y-%m-%d\ %H:%M`'" "./cmd/flp-informers"
 
 # final stage
 FROM registry.access.redhat.com/ubi9/ubi-minimal:9.8-1785214301
@@ -23,6 +25,7 @@ ARG BUILDVERSION_Y
 
 WORKDIR /
 COPY --from=builder /app/flowlogs-pipeline .
+COPY --from=builder /app/flp-informers .
 COPY LICENSE /licenses/
 
 USER 65532:65532
